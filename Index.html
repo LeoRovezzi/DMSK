@@ -1,0 +1,996 @@
+
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, shrink-to-fit=no">
+    <title>INAMEX DMSK  Web </title>
+    <link rel="icon" type="image/x-icon" href="" />
+    <link href="" rel="stylesheet" type="text/css" />
+    <link href="" rel="stylesheet" type="text/css" />
+    <script src=""></script>
+    <!-- BEGIN GLOBAL MANDATORY STYLES -->
+    <link href="" rel="stylesheet">
+    <link href="" rel="stylesheet" type="text/css" />
+    <link href="" rel="stylesheet" type="text/css" />
+    <link href="" rel="stylesheet" type="text/css" />
+    <!-- END GLOBAL MANDATORY STYLES -->
+
+    <!-- BEGIN PAGE LEVEL STYLE -->
+    <link href="" rel="stylesheet" type="text/css" />
+    <link rel="stylesheet" href="">
+
+
+    <link href="" rel="stylesheet" type="text/css" />
+    <link rel="stylesheet" href="">
+
+    <!-- END PAGE LEVEL STYLE -->
+
+    <link rel="stylesheet" type="text/css"
+        href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font@7.2.96/css/materialdesignicons.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+    <script language="javascript" type="text/javascript">
+        // Variable global para almacenar el userId del usuario autenticado
+        var currentUserId = null;
+
+        // Función para obtener parámetro de la URL
+        function getUrlParameter(name) {
+            name = name.replace(/[\[]/, '\\[').replace(/[\]]/, '\\]');
+            var regex = new RegExp('[\\?&]' + name + '=([^&#]*)');
+            var results = regex.exec(location.search);
+            return results === null ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
+        }
+
+        // Función para obtener el NUSA_Guids configurable
+        function getNusaGuids() {
+            // Parte fija del GUID (segunda parte después del /)
+            var fixedPart = "b195c4d5-94f3-4045-9b7e-41072f13aa4e";
+
+            // 1. Prioridad: parámetro URL (solo primera parte)
+            var urlGuids = getUrlParameter('nusa_guids');
+            if (urlGuids && urlGuids.trim() !== '') {
+                var fullGuids = urlGuids.trim() + "/" + fixedPart;
+                console.log('Usando NUSA_Guids desde URL:', fullGuids);
+                return fullGuids;
+            }
+
+            // 2. Segundo: localStorage
+            var savedGuids = localStorage.getItem('nusa_guids');
+            if (savedGuids && savedGuids.trim() !== '') {
+                console.log('Usando NUSA_Guids desde localStorage:', savedGuids);
+                return savedGuids;
+            }
+
+            // 3. Por defecto
+            var defaultGuids = "f0d9d89c-def2-4d98-a31e-1ec23b6b8d01/" + fixedPart;
+            console.log('Usando NUSA_Guids por defecto:', defaultGuids);
+            return defaultGuids;
+        }
+
+        function NUSA_configure() {
+            console.log("Configuring Nuance with user:", currentUserId);
+
+            // Obtener el NUSA_Guids configurable (URL > localStorage > default)
+            var nusaGuids = getNusaGuids();
+
+            // Configurar Nuance con el GUIDs configurable
+            document.cookie = "NUSA_Guids=" + nusaGuids;
+
+
+            NUSA_userId = currentUserId;
+            NUSA_applicationName = "DMSK";
+            NUSA_language = "es-ES";
+            NUSA_topic = "Radiology";
+
+            console.log("NUSA_userId:", NUSA_userId);
+
+            // Configurar el speech bar
+            NUSA_embedSpeechBar(document.getElementById("speechBarContainer"));
+        }
+
+        function loadNuanceSpeechAnywhere() {
+            // Cargar el script de Nuance después del login
+            console.log('Loading Nuance SpeechAnywhere script');
+
+            // Crear elemento script dinámicamente
+            const script = document.createElement('script');
+            script.language = 'javascript';
+            script.type = 'text/javascript';
+            // Cargar el script de Nuance
+            script.src = 'https://speechanywhere.nuancehdp.com/mainline/scripts/Nuance.SpeechAnywhere.js';
+
+            script.onerror = function() {
+                console.error("Failed to load Nuance script");
+            };
+
+            // Cuando el script termine de cargar, inicializar la configuración
+            script.onload = function() {
+                console.log("Nuance script loaded, configuring...");
+                setTimeout(function() {
+                    NUSA_configure();
+                }, 100);
+            };
+
+            // Agregar el script al head del documento
+            document.head.appendChild(script);
+        }
+
+        function NUSA_onControlDeviceEventReceived(eventButtonId) {
+
+            switch (eventButtonId) {
+
+                case NUSA_ControlDeviceEvent.Button1Pressed:
+                    console.log("NUSA_ControlDeviceEvent.Button1Pressed");
+                    
+                    break;
+                case NUSA_ControlDeviceEvent.Button4Pressed:
+                    console.log("NUSA_ControlDeviceEvent.Button4Pressed");
+                    break;
+                case NUSA_ControlDeviceEvent.Button5Pressed:
+                    console.log("NUSA_ControlDeviceEvent.Button5Pressed");
+                    break;
+
+            }
+
+        }
+
+    </script>
+
+    <style>
+        /* Estilos del formulario de login */
+        .login-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+        .login-container {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 400px;
+            backdrop-filter: blur(10px);
+        }
+
+        .login-title {
+            text-align: center;
+            margin-bottom: 30px;
+            font-family: 'Roboto', sans-serif;
+            font-size: 28px;
+            font-weight: 500;
+            color: #333;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-family: 'Roboto', sans-serif;
+            font-weight: 500;
+            color: #555;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 16px;
+            font-family: 'Roboto', sans-serif;
+            transition: border-color 0.3s ease;
+            box-sizing: border-box;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-family: 'Roboto', sans-serif;
+            font-weight: 500;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .login-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .login-btn:active {
+            transform: translateY(0);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* Modo oscuro */
+        .dark-mode {
+            background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%) !important;
+            color: #ffffff !important;
+        }
+
+        .dark-mode .widget.box {
+            background-color: #1e1e1e !important;
+            border-color: #333 !important;
+        }
+
+        .dark-mode .widget-header {
+            background-color: #2a2a2a !important;
+            color: #ffffff !important;
+        }
+
+        .dark-mode .form-control {
+            background-color: #2a2a2a !important;
+            border-color: #444 !important;
+            color: #ffffff !important;
+        }
+
+        .dark-mode .btn {
+            background-color: #333 !important;
+            border-color: #555 !important;
+            color: #ffffff !important;
+        }
+
+        /* Estilos para la notificación */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background-color: #28a745;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 5px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            z-index: 10000;
+            font-family: 'Roboto', sans-serif;
+            font-weight: 500;
+            font-size: 14px;
+            display: none;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        .dark-mode .notification {
+            background-color: #2e7d32;
+            color: white;
+        }
+
+        /* Estilos específicos para notificación de error de login */
+        #login-error-notification {
+            background-color: #dc3545;
+        }
+
+        .dark-mode #login-error-notification {
+            background-color: #c62828;
+        }
+
+        /* Estilos del formulario de login en modo oscuro */
+        .dark-mode .login-overlay {
+            background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%);
+        }
+
+        .dark-mode .login-container {
+            background: rgba(33, 33, 33, 0.95);
+            color: #ffffff;
+        }
+
+        .dark-mode .login-title {
+            color: #ffffff;
+        }
+
+        .dark-mode .form-group label {
+            color: #cccccc;
+        }
+
+        .dark-mode .form-group input {
+            background-color: #404040;
+            border-color: #666666;
+            color: #ffffff;
+        }
+
+        .dark-mode .form-group input:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+        }
+
+        .dark-mode .login-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .dark-mode .login-btn:hover {
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        /* Estilos para la pantalla principal */
+        .main-app-container {
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .main-content-centered {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .app-widget-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            width: 100%;
+            max-width: 1200px;
+            overflow: hidden;
+        }
+
+        .dark-mode .app-widget-container {
+            background: rgba(33, 33, 33, 0.95);
+            color: #ffffff;
+        }
+
+        .app-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .dark-mode .app-header {
+            background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%);
+        }
+
+        .app-header h4 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 500;
+        }
+
+        .app-content {
+            padding: 30px;
+        }
+
+        .navbar-modern {
+            backdrop-filter: blur(15px);
+            margin-bottom: 20px;
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+            border-radius: 15px;
+            margin-left: 20px;
+            margin-right: 20px;
+        }
+
+        .dark-mode .navbar-modern {
+            background: rgba(33, 33, 33, 0.6);
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Estilos para el textarea moderno */
+        .modern-textarea {
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 16px;
+            font-family: 'Roboto', sans-serif;
+            transition: border-color 0.3s ease;
+            min-height: 400px;
+            resize: vertical;
+            width: 100% !important;
+            box-sizing: border-box;
+        }
+
+        .modern-textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .dark-mode .modern-textarea {
+            background-color: #404040;
+            border-color: #666666;
+            color: #ffffff;
+        }
+
+        .dark-mode .modern-textarea:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+        }
+
+        .speech-controls {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: rgba(102, 126, 234, 0.1);
+            border-radius: 8px;
+        }
+
+        .dark-mode .speech-controls {
+            background: rgba(102, 126, 234, 0.2);
+        }
+
+        /* Estilos para botones modernos */
+        .modern-btn {
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: 500;
+            border-radius: 25px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            border: none;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 200px;
+        }
+
+        .modern-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+            background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+        }
+
+        .modern-btn:active {
+            transform: translateY(0);
+        }
+
+        .modern-theme-btn {
+            padding: 8px 16px;
+            font-size: 14px;
+            font-weight: 500;
+            border-radius: 20px;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            border: 2px solid #667eea;
+            background: rgba(255, 255, 255, 0.9);
+            color: #667eea;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            backdrop-filter: blur(10px);
+        }
+
+        .modern-theme-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.2);
+            background: rgba(102, 126, 234, 0.1);
+        }
+
+        .modern-theme-btn:active {
+            transform: translateY(0);
+        }
+
+        .theme-text {
+            font-weight: 500;
+        }
+
+        /* Estilos para modo oscuro */
+        .dark-mode .modern-theme-btn {
+            border-color: #667eea;
+            background: rgba(33, 33, 33, 0.9);
+            color: #667eea;
+        }
+
+        .dark-mode .modern-theme-btn:hover {
+            background: rgba(102, 126, 234, 0.2);
+        }
+
+        .modern-logout-btn {
+            padding: 8px 16px;
+            font-size: 14px;
+            font-weight: 500;
+            border-radius: 20px;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            border: 2px solid #dc3545;
+            background: rgba(255, 255, 255, 0.9);
+            color: #dc3545;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            backdrop-filter: blur(10px);
+            margin-left: 10px;
+        }
+
+        .modern-logout-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(220, 53, 69, 0.2);
+            background: rgba(220, 53, 69, 0.1);
+        }
+
+        .modern-logout-btn:active {
+            transform: translateY(0);
+        }
+
+        .logout-text {
+            font-weight: 500;
+        }
+
+        /* Estilos para modo oscuro */
+        .dark-mode .modern-logout-btn {
+            border-color: #dc3545;
+            background: rgba(33, 33, 33, 0.9);
+            color: #dc3545;
+        }
+
+        .dark-mode .modern-logout-btn:hover {
+            background: rgba(220, 53, 69, 0.2);
+        }
+
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
+
+        /* Aplicar fuente Roboto a elementos específicos */
+        h4 {
+            font-family: 'Roboto', sans-serif !important;
+            font-weight: 500 !important;
+        }
+
+        .footer-wrapper p {
+            font-family: 'Roboto', sans-serif !important;
+            font-weight: 400 !important;
+        }
+    </style>
+
+</head>
+
+<body class="layout-boxed" data-bs-spy="scroll" data-bs-target="#navSection" data-bs-offset="100" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh;">
+
+    <!-- Formulario de Login -->
+    <div id="login-overlay" class="login-overlay">
+        <div class="login-container">
+            <h2 class="login-title">DMSK iniciar sesión</h2>
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="username">Usuario:</label>
+                    <input type="text" id="username" name="username" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Contraseña:</label>
+                    <input type="password" id="password" name="password" required>
+                </div>
+                <button type="submit" class="login-btn">Ingresar</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- BEGIN LOADER -->
+    <div id="load_screen" class="hidden">
+        <div class="loader">
+            <div class="loader-content">
+                <div class="spinner-grow align-self-center">
+                </div>
+            </div>
+        </div>
+    </div>
+    <!--  END LOADER -->
+
+
+    <!-- Notificación de copiado -->
+    <div id="copy-notification" class="notification">
+        <i class="mdi mdi-check-circle" style="margin-right: 8px;"></i>
+        Copiado al portapapeles
+    </div>
+
+    <!-- Notificación de cambio de tema -->
+    <div id="theme-notification" class="notification">
+        <i class="mdi mdi-white-balance-sunny" style="margin-right: 8px;"></i>
+        <span>Modo claro activado</span>
+    </div>
+
+    <!-- Notificación de error de login -->
+    <div id="login-error-notification" class="notification">
+        <i class="mdi mdi-alert-circle" style="margin-right: 8px;"></i>
+        Credenciales incorrectas. Por favor, inténtelo de nuevo.
+    </div>
+
+
+    <!--  BEGIN MAIN CONTAINER  -->
+    <div class="main-app-container hidden" id="container">
+
+        <!-- Barra de navegación moderna -->
+        <nav class="navbar-modern">
+            <div class="header-container container-xxl">
+                <header class="header navbar navbar-expand-sm expand-header">
+                    <button id="theme-toggle" class="btn btn-outline-primary modern-theme-btn" title="Cambiar tema">
+                        <i id="theme-icon" class="mdi mdi-weather-sunny" style="font-size: 20px;"></i>
+                        <span class="theme-text">Tema</span>
+                    </button>
+                    <button id="logout-btn" class="btn btn-outline-danger modern-logout-btn" title="Cerrar sesión">
+                        <i class="mdi mdi-logout" style="font-size: 20px;"></i>
+                        <span class="logout-text">Cerrar sesión</span>
+                    </button>
+                </header>
+            </div>
+        </nav>
+
+        <!-- Contenido centrado -->
+        <div class="main-content-centered">
+            <div class="app-widget-container">
+                <div class="app-header">
+                    <h4>DMSK - Informe Médico</h4>
+                </div>
+                <div class="app-content">
+                    <div class="speech-controls">
+                        <div id="speechBarContainer"></div>
+                    </div>
+                    <div class="form-group mt-4">
+                        <textarea name="TxtInforme" rows="2" cols="20" id="TxtInforme" class="form-control modern-textarea" placeholder="Su informe médico aquí..."></textarea>
+                    </div>
+                    <div class="text-center mt-4">
+                        <button class="btn btn-primary copy-btn modern-btn" title="Copiar al portapapeles">
+                            <i class="mdi mdi-content-copy" style="font-size: 20px; margin-right: 8px;"></i>
+                            Copiar al portapapeles
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer minimalista -->
+        <footer class="text-center py-3" style="color: rgba(255,255,255,0.7);">
+            <small>Copyright © <span class="dynamic-year">2026</span>, All rights reserved.</small>
+        </footer>
+
+    </div>
+    <!-- END MAIN CONTAINER -->
+
+    <!-- BEGIN GLOBAL MANDATORY SCRIPTS -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src=""></script>
+    <script src=""></script>
+    <script src=""></script>
+    <script src=""></script>
+    <script src=""></script>
+    <!-- END GLOBAL MANDATORY SCRIPTS -->
+
+    <!-- BEGIN PAGE LEVEL SCRIPTS -->
+    <script src=""></script>
+    <script src=""></script>
+    <script src=""></script>
+    <script src=""></script>
+    <script src=""></script>
+    <!-- END PAGE LEVEL SCRIPTS -->
+
+
+
+    <script type="text/javascript">
+
+
+        $(document).ready(function () {
+
+            // Variables para controlar timeouts de notificaciones y botones
+            let themeNotificationTimeout;
+            let copyNotificationTimeout;
+            let copyButtonTimeout;
+            let loginErrorNotificationTimeout;
+
+            // Función para mostrar notificación de tema
+            function showThemeNotification(theme) {
+                const notification = document.getElementById('theme-notification');
+                const icon = notification.querySelector('i');
+                const text = notification.querySelector('span');
+
+                // Limpiar timeouts anteriores
+                if (themeNotificationTimeout) {
+                    clearTimeout(themeNotificationTimeout);
+                }
+
+                // Resetear animación y estado
+                notification.style.animation = '';
+                notification.style.display = 'none';
+
+                if (theme === 'dark') {
+                    icon.className = 'mdi mdi-moon-waning-crescent';
+                    text.textContent = 'Modo oscuro activado';
+                    notification.style.backgroundColor = '#2e7d32';
+                } else {
+                    icon.className = 'mdi mdi-white-balance-sunny';
+                    text.textContent = 'Modo claro activado';
+                    notification.style.backgroundColor = '#28a745';
+                }
+
+                // Forzar reflow para resetear animación
+                notification.offsetHeight;
+
+                notification.style.display = 'block';
+
+                // Ocultar automáticamente después de 3 segundos
+                themeNotificationTimeout = setTimeout(function() {
+                    notification.style.animation = 'slideOut 0.3s ease-in forwards';
+                    setTimeout(function() {
+                        notification.style.display = 'none';
+                        notification.style.animation = '';
+                    }, 300);
+                }, 3000);
+            }
+
+            // Función para mostrar notificación de error de login
+            function showLoginErrorNotification() {
+                const notification = document.getElementById('login-error-notification');
+
+                // Limpiar timeouts anteriores
+                if (loginErrorNotificationTimeout) {
+                    clearTimeout(loginErrorNotificationTimeout);
+                }
+
+                // Resetear animación y estado
+                notification.style.animation = '';
+                notification.style.display = 'none';
+
+                // Forzar reflow para resetear animación
+                notification.offsetHeight;
+
+                notification.style.display = 'block';
+
+                // Ocultar automáticamente después de 3 segundos
+                loginErrorNotificationTimeout = setTimeout(function() {
+                    notification.style.animation = 'slideOut 0.3s ease-in forwards';
+                    setTimeout(function() {
+                        notification.style.display = 'none';
+                        notification.style.animation = '';
+                    }, 300);
+                }, 3000);
+            }
+
+
+            // Función para cambiar el tema
+            function toggleTheme() {
+                var body = $('body');
+                var themeIcon = $('#theme-icon');
+                var themeText = $('.theme-text');
+
+                if (body.hasClass('dark-mode')) {
+                    // Cambiar a modo claro
+                    body.removeClass('dark-mode');
+                    themeIcon.removeClass('mdi-moon-waning-crescent').addClass('mdi-weather-sunny');
+                    themeText.text('Tema');
+                    localStorage.setItem('theme', 'light');
+                    showThemeNotification('light');
+                } else {
+                    // Cambiar a modo oscuro
+                    body.addClass('dark-mode');
+                    themeIcon.removeClass('mdi-weather-sunny').addClass('mdi-moon-waning-crescent');
+                    themeText.text('Tema');
+                    localStorage.setItem('theme', 'dark');
+                    showThemeNotification('dark');
+                }
+            }
+
+            // Evento click del botón
+            $('#theme-toggle').on('click', function() {
+                toggleTheme();
+            });
+
+
+            // Función para cerrar sesión
+            function logout() {
+                // La solución más simple: recargar la página completa
+                // Esto limpia automáticamente todos los scripts, variables globales y estado
+                console.log('Cerrando sesión - recargando página');
+                window.location.reload();
+            }
+
+            // Evento click del botón de cerrar sesión
+            $('#logout-btn').on('click', function() {
+                logout();
+            });
+
+            // Cargar tema guardado al iniciar
+            var savedTheme = localStorage.getItem('theme');
+            var themeIcon = $('#theme-icon');
+            var themeText = $('.theme-text');
+            if (savedTheme === 'dark') {
+                $('body').addClass('dark-mode');
+                themeIcon.removeClass('mdi-weather-sunny').addClass('mdi-moon-waning-crescent');
+                themeText.text('Tema');
+            } else {
+                themeIcon.removeClass('mdi-moon-waning-crescent').addClass('mdi-weather-sunny');
+                themeText.text('Tema');
+            }
+
+            // Función para copiar al portapapeles usando la API moderna
+            function copyToClipboard() {
+                const textarea = document.getElementById('TxtInforme');
+                const text = textarea.value;
+
+                if (navigator.clipboard && window.isSecureContext) {
+                    // Usar la API moderna del portapapeles
+                    navigator.clipboard.writeText(text).then(function() {
+                        console.log('Copiado al portapapeles: ', text);
+                        // Mostrar feedback visual (opcional)
+                        showCopyFeedback();
+                    }).catch(function(err) {
+                        console.error('Error al copiar: ', err);
+                        // Fallback a método antiguo
+                        fallbackCopyTextToClipboard(text);
+                    });
+                } else {
+                    // Fallback para navegadores antiguos o contextos no seguros
+                    fallbackCopyTextToClipboard(text);
+                }
+            }
+
+            // Método fallback para navegadores antiguos
+            function fallbackCopyTextToClipboard(text) {
+                const textArea = document.createElement("textarea");
+                textArea.value = text;
+
+                // Evitar que sea visible
+                textArea.style.position = "fixed";
+                textArea.style.left = "-999999px";
+                textArea.style.top = "-999999px";
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+
+                try {
+                    const successful = document.execCommand('copy');
+                    if (successful) {
+                        console.log('Copiado al portapapeles (fallback): ', text);
+                        showCopyFeedback();
+                    } else {
+                        console.error('Error al copiar (fallback)');
+                    }
+                } catch (err) {
+                    console.error('Error al copiar (fallback): ', err);
+                }
+
+                document.body.removeChild(textArea);
+            }
+
+            // Función para mostrar notificación
+            function showNotification() {
+                const notification = document.getElementById('copy-notification');
+
+                // Limpiar timeouts anteriores
+                if (copyNotificationTimeout) {
+                    clearTimeout(copyNotificationTimeout);
+                }
+
+                // Resetear animación y estado
+                notification.style.animation = '';
+                notification.style.display = 'none';
+
+                // Forzar reflow para resetear animación
+                notification.offsetHeight;
+
+                notification.style.display = 'block';
+
+                // Ocultar automáticamente después de 3 segundos
+                copyNotificationTimeout = setTimeout(function() {
+                    notification.style.animation = 'slideOut 0.3s ease-in forwards';
+                    setTimeout(function() {
+                        notification.style.display = 'none';
+                        notification.style.animation = '';
+                    }, 300);
+                }, 3000);
+            }
+
+            // Función para mostrar feedback visual
+            function showCopyFeedback() {
+                // Mostrar notificación de la página
+                showNotification();
+
+                const button = document.querySelector('.copy-btn');
+
+                // Limpiar timeout anterior del botón
+                if (copyButtonTimeout) {
+                    clearTimeout(copyButtonTimeout);
+                }
+
+                // Resetear estilos del botón
+                button.style.background = '';
+                button.style.transform = '';
+
+                // Cambiar al icono de check y color verde
+                button.innerHTML = '<i class="mdi mdi-check" style="font-size: 20px; margin-right: 8px;"></i>Copiado!';
+                button.style.background = 'linear-gradient(135deg, #28a745 0%, #20c997 100%)';
+
+                // Volver al estado original después de 2 segundos
+                copyButtonTimeout = setTimeout(function() {
+                    button.innerHTML = '<i class="mdi mdi-content-copy" style="font-size: 20px; margin-right: 8px;"></i>Copiar al portapapeles';
+                    button.style.background = '';
+                }, 2000);
+            }
+
+            // Evento click del botón de copiar
+            $('.copy-btn').on('click', function(e) {
+                e.preventDefault();
+                copyToClipboard();
+            });
+
+            // Función para manejar el login
+            function handleLogin(event) {
+                event.preventDefault();
+
+                // Obtener valores del formulario
+                const username = document.getElementById('username').value;
+                const password = document.getElementById('password').value;
+
+                // Validación: usuario debe ser igual a contraseña
+                if (username.trim() !== '' && password.trim() !== '' && username === password) {
+                    // Almacenar el userId en variable global
+                    currentUserId = username;
+
+                    // Actualizar el texto del botón de logout con el nombre del usuario
+                    document.querySelector('.logout-text').textContent = 'Cerrar sesión de ' + currentUserId;
+                    document.getElementById('logout-btn').title = 'Cerrar sesión de ' + currentUserId;
+
+                    // Ocultar formulario de login
+                    document.getElementById('login-overlay').classList.add('hidden');
+
+                    // Mostrar contenido principal
+                    document.getElementById('container').classList.remove('hidden');
+                    document.getElementById('load_screen').classList.remove('hidden');
+
+                    // Limpiar formulario
+                    document.getElementById('login-form').reset();
+
+                    // Cargar dinámicamente Nuance Speech Anywhere después del login
+                    loadNuanceSpeechAnywhere();
+                } else {
+                    showLoginErrorNotification();
+                }
+            }
+
+            // Evento submit del formulario de login
+            document.getElementById('login-form').addEventListener('submit', handleLogin);
+
+        });
+    </script>
+</body>
+
+</html>
